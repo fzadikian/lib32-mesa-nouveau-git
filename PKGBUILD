@@ -79,12 +79,12 @@ case $MESA_WHICH_LLVM in
     4)
         # extra/llvm
         makedepends+=(
-            'lib32-llvm=18.1.8'
+            'lib32-llvm=1:18.1.8'
             'lib32-spirv-llvm-translator'
             'lib32-spirv-tools')
         depends+=(
             'lib32-clang'
-            'lib32-llvm-libs=18.1.8'
+            'lib32-llvm-libs=1:18.1.8'
             'lib32-spirv-llvm-translator'
             'lib32-spirv-tools')
         ;;

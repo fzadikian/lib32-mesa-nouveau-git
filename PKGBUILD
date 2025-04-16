@@ -150,7 +150,6 @@ build () {
         -D gallium-extra-hud=true \
         -D vulkan-layers=device-select,overlay \
         -D gallium-nine=true \
-        -D gallium-opencl=disabled \
         -D gallium-va=enabled \
         -D gallium-vdpau=enabled \
         -D gallium-xa=enabled \

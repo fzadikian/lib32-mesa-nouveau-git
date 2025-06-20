@@ -1,4 +1,4 @@
-# Maintainer: Reza Jahanbakhshi <reza.jahanbakhshi at gmail dot com
+# Maintainer: Reza Jahanbakhshi <reza.jahanbakhshi at gmail dot com>
 # Contributor: Lone_Wolf <lone_wolf@klaas-de-kat.nl>
 # Contributor: Armin K. <krejzi at email dot com>
 # Contributor: Kristian Klausen <klausenbusk@hotmail.com>
@@ -9,35 +9,33 @@
 # Contributor: Thomas Dziedzic < gostrc at gmail >
 # Contributor: Antti "Tera" Oja <antti.bofh@gmail.com>
 # Contributor: Diego Jose <diegoxter1006@gmail.com>
+# Contributor: Francisco Zadikian <admin at gnlug dot com>
 
-pkgname=lib32-mesa-git
-pkgdesc="an open-source implementation of the OpenGL specification, git version"
-pkgver=25.2.0_devel.206777.7bfb51a7e6f.d41d8cd
+pkgname=lib32-mesa-nouveau-git
+pkgdesc="Open-source OpenGL and Vulkan drivers (minimal nouveau lib32 version)"
+pkgver=25.2.0_devel.207271.413dbcdf79b.d41d8cd
 pkgrel=1
 arch=('x86_64')
-makedepends=('python-mako' 'lib32-libxml2' 'xorgproto'
-             'lib32-libvdpau' 'git' 'lib32-libglvnd' 'wayland-protocols' 
+makedepends=('python-mako' 'lib32-libxml2' 'xorgproto' 'rust' 'rust-bindgen' 'cbindgen'
+             'lib32-rust-libs' 'lib32-libvdpau' 'git' 'lib32-libglvnd' 'wayland-protocols' 
              'meson' 'lib32-libva' 'lib32-libxrandr' 'python-packaging' 'python-pyaml')
-depends=('mesa-git' 'lib32-gcc-libs' 'lib32-libdrm' 'lib32-wayland' 'lib32-libxxf86vm' 
+depends=('mesa-nouveau-git' 'lib32-gcc-libs' 'lib32-libdrm' 'lib32-wayland' 'lib32-libxxf86vm' 
          'lib32-libxdamage' 'lib32-libxshmfence' 'lib32-libelf' 'lib32-libunwind' 
-         'lib32-lm_sensors' 'glslang' 'lib32-vulkan-icd-loader' 'lib32-zstd' 
+         'lib32-lm_sensors' 'glslang' 'lib32-vulkan-icd-loader' 'lib32-zstd'
          'lib32-libxcb' 'lib32-libxfixes' 'lib32-expat' 'lib32-libxext' 'lib32-libx11'
          'lib32-zlib' 'lib32-glibc'  'lib32-spirv-tools'
 )
 optdepends=('opengl-man-pages: for the OpenGL API man pages')
-provides=('lib32-mesa' 'lib32-vulkan-intel' 'lib32-vulkan-radeon' 'lib32-vulkan-mesa-layers' 'lib32-libva-mesa-driver' 'lib32-mesa-vdpau' 'lib32-mesa-libgl' 'lib32-opengl-driver' 'lib32-vulkan-driver')
-conflicts=('lib32-mesa' 'lib32-vulkan-intel' 'lib32-vulkan-radeon' 'lib32-vulkan-mesa-layers' 'lib32-libva-mesa-driver' 'lib32-mesa-vdpau' 'lib32-mesa-libgl')
+provides=('lib32-mesa' 'lib32-vulkan-nouveau' 'lib32-vulkan-mesa-layers' 'lib32-libva-mesa-driver' 'lib32-mesa-vdpau' 'lib32-mesa-libgl' 'lib32-opengl-driver' 'lib32-vulkan-driver')
+conflicts=('lib32-mesa' 'lib32-vulkan-nouveau' 'lib32-vulkan-mesa-layers' 'lib32-libva-mesa-driver' 'lib32-mesa-vdpau' 'lib32-mesa-libgl')
 url="https://www.mesa3d.org"
 license=('custom')
 source=('mesa::git+https://gitlab.freedesktop.org/mesa/mesa.git#branch=main'
-        'LICENSE'
-        'llvm32.native')
+        'LICENSE')
 md5sums=('SKIP'
-         '5c65a0fe315dd347e09b1f2826a1df5a'
-         '6b4a19068a323d7f90a3d3cd315ed1f9')
+         '5c65a0fe315dd347e09b1f2826a1df5a')
 sha512sums=('SKIP'
-            '25da77914dded10c1f432ebcbf29941124138824ceecaf1367b3deedafaecabc082d463abcfa3d15abff59f177491472b505bcb5ba0c4a51bb6b93b4721a23c2'
-            'c7dbb390ebde291c517a854fcbe5166c24e95206f768cc9458ca896b2253aabd6df12a7becf831998721b2d622d0c02afdd8d519e77dea8e1d6807b35f0166fe')
+            '25da77914dded10c1f432ebcbf29941124138824ceecaf1367b3deedafaecabc082d463abcfa3d15abff59f177491472b505bcb5ba0c4a51bb6b93b4721a23c2')
 
 # NINJAFLAGS is an env var used to pass commandline options to ninja
 # NOTE: It's your responbility to validate the value of $NINJAFLAGS. If unsure, don't set it.
@@ -91,7 +89,6 @@ case $MESA_WHICH_LLVM in
     *)
 esac
 
-
 pkgver() {
     cd mesa
     local _ver
@@ -111,10 +108,10 @@ pkgver() {
 }
 
 prepare() {
-    # although removing _build folder in build() function feels more natural,
+    # although removing build folder in build() function feels more natural,
     # that interferes with the spirit of makepkg --noextract
-    if [  -d _build ]; then
-        rm -rf _build
+    if [  -d build ]; then
+        rm -rf build
     fi
 
     local _patchfile
@@ -128,29 +125,28 @@ prepare() {
 }
 
 build () {
-    export CC="${CC:-gcc}"
-    export CXX="${CXX:-g++}"
-    CC="$CC -m32"
-    CXX="$CXX -m32"
+    [ -d build/subprojects ] && find build/subprojects -iname "*.rlib" -delete
+    [ -d build/src/nouveau/compiler ] && find build/src/nouveau/compiler -iname "*.rlib" -delete
 
-    export PKG_CONFIG=/usr/bin/i686-pc-linux-gnu-pkg-config
-
-    meson setup mesa _build \
-        --native-file llvm32.native \
-        -D b_ndebug=true \
-        -D buildtype=plain \
+    arch-meson mesa build \
+        --cross-file lib32 \
         --wrap-mode=nofallback \
+        --reconfigure \
+        --force-fallback-for=syn,paste,rustc-hash \
+        -D b_ndebug=true \
         -D prefix=/usr \
         -D sysconfdir=/etc \
         --libdir=/usr/lib32 \
         -D platforms=x11,wayland \
-        -D gallium-drivers=r300,r600,radeonsi,nouveau,svga,softpipe,llvmpipe,virgl,iris,zink,crocus \
-        -D vulkan-drivers=amd,intel,swrast,virtio,intel_hasvk \
+        -D android-libbacktrace=disabled \
+        -D gallium-drivers=llvmpipe,zink,nouveau \
+        -D vulkan-drivers=nouveau \
         -D egl=enabled \
         -D gallium-extra-hud=true \
         -D vulkan-layers=device-select,overlay \
         -D gallium-va=enabled \
         -D gallium-vdpau=enabled \
+        -D gallium-mediafoundation=disabled \
         -D gbm=enabled \
         -D gles1=disabled \
         -D gles2=enabled \
@@ -165,13 +161,13 @@ build () {
         -D microsoft-clc=disabled \
         -D legacy-x11=dri2
 
-    meson configure --no-pager _build
+    meson configure --no-pager build
 
-    ninja  $NINJAFLAGS -C _build
+    ninja  $NINJAFLAGS -C build
 }
 
 package() {
-    DESTDIR="$pkgdir" ninja $NINJAFLAGS -C _build install
+    DESTDIR="$pkgdir" ninja $NINJAFLAGS -C build install
 
     # remove files provided by mesa-git
     rm -rf "$pkgdir"/etc
